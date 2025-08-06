@@ -211,41 +211,6 @@ def delete_job(job_id):
         db.session.rollback()
         return jsonify({'error': f'删除失败: {str(e)}'}), 500
 
-
-#申请岗位
-@job_bp.route('/apply', methods=['POST'])
-def apply_job():
-    data = request.get_json()
-
-    # ✅ 固定用户ID为 1
-    user_id = 1
-    job_id = data.get('job_id')
-
-    if not job_id:
-        return jsonify({'msg': 'job_id 必填'}), 400
-    job = Job.query.get(job_id)
-    if not job:
-        return jsonify({'msg': '岗位不存在'}), 404
-
-    # ✅ 如果你有 User 模型校验可以暂时注释掉
-    # if not User.query.get(user_id):
-    #     return jsonify({'msg': '用户不存在'}), 404
-
-    existed = JobApplication.query.filter_by(user_id=user_id, job_id=job_id).first()
-    if existed:
-        return jsonify({'msg': '你已经申请过该岗位'}), 400
-
-    application = JobApplication(
-        user_id=user_id,
-        job_id=job_id,
-        apply_time=datetime.utcnow(),
-        status='待审核'
-    )
-    db.session.add(application)
-    job.apply_count = (job.apply_count or 0) + 1
-    db.session.commit()
-
-    return jsonify({'msg': '申请成功'}), 200
 ###申请岗位
 from flask import request, jsonify
 @job_bp.route('/applied', methods=['GET'])

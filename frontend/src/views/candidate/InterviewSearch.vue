@@ -270,12 +270,12 @@
             class="custom-modal-primary-btn" 
             @click="goToMeeting"
           >
-            进入会议
+            进入笔试
             <span class="custom-btn-arrow">→</span>
           </button>
          <button 
   class="custom-modal-secondary-btn" 
-  @click="verifyPassed ? $router.push({ name: 'InterviewTest' }) : retryVerification()"
+  @click="verifyPassed ? $router.push({ name: 'InterviewWriten' }) : retryVerification()"
 >
   {{ verifyPassed ? '稍后进入' : '重新验证' }}
 </button>
@@ -686,9 +686,9 @@ export default {
           this.showVerifyResult = true
           
           if (res.passed) {
-            // 验证通过后自动跳转到test页面
+            // 验证通过后自动跳转到笔试页面
             setTimeout(() => {
-              this.$router.push('/candidate/test')
+              this.$router.push('/candidate/interviewWriten')
             }, 3000)
           }
           
@@ -716,7 +716,7 @@ goToMeeting() {
   this.$router.push({ name: 'InterviewTest' }).catch((err) => {
     console.error('跳转失败:', err)
     // 备用方案，强制跳转
-    window.location.href = '/candidate/test'
+    window.location.href = '/candidate/InterviewWriten'
   })
 }
 

@@ -205,21 +205,17 @@ from time import mktime
 import hashlib
 import hmac
 from urllib.parse import urlencode
-
 app = Flask(__name__)
-
 # 讯飞API配置
 APPID = 'e5850021'
 APIKEY = 'dda0f69489a3db1e0d495f40a5fd40eb'
 APISECRET = 'OTNlMGI0OWUxM2JlMWRhM2EzNDVhZjAw'
-
 # 工具类
 class Url:
     def __init__(self, host, path, schema):
         self.host = host
         self.path = path
         self.schema = schema
-
 def parse_url(requset_url):
     stidx = requset_url.index("://")
     host = requset_url[stidx + 3:]
