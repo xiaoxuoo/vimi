@@ -694,10 +694,8 @@ goToMeeting() {
   }
 
   // 跳转到面试测试页面
-  this.$router.push({ name: 'InterviewTest' }).catch((err) => {
+  this.$router.push({ name: 'Interviewauto' }).catch((err) => {
     console.error('跳转失败:', err)
-    // 备用方案，强制跳转
-    window.location.href = '/candidate/Interviewauto'
   })
 }
 

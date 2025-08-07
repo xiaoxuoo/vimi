@@ -95,8 +95,8 @@ const sidebarItems = [
   { title: '职位搜索', route: '/candidate/search', icon: Search },
   { title: '笔试历史', route: '/candidate/schedule', icon: Calendar },
   { title: '面试历史', route: '/candidate/history', icon: Timer },
-    { title: '模拟笔试', route: '/candidate/interviewWriten', icon: Timer },
-  { title: '模拟面试', route: '/candidate/test', icon: VideoCamera }
+  //   { title: '模拟笔试', route: '/candidate/interviewWriten', icon: Timer },
+  // { title: '模拟面试', route: '/candidate/test', icon: VideoCamera }
 ]
 
 // 检查路由是否激活

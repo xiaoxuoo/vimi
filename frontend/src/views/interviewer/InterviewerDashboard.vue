@@ -24,7 +24,6 @@
         </div>
       </div>
     </header>
-
     <div class="flex">
       <!-- 侧边栏 -->
       <nav class="w-64 bg-white shadow-lg h-screen fixed">

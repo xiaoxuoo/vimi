@@ -67,15 +67,25 @@
       </div>
     </div>
     
-    <div class="video-controls">
-      <button 
-        @click="cameraOn ? stopCamera() : startCamera()" 
-        :class="['camera-btn', cameraOn ? 'btn-stop' : 'btn-start']"
-      >
-        <i :class="cameraOn ? 'icon-stop' : 'icon-start'"></i>
-        {{ cameraOn ? '关闭摄像头' : '开启摄像头' }}
-      </button>
-    </div>
+  <!-- 修改后的视频控制区域 -->
+<div class="video-controls">
+  <div class="operation-tips">
+    <p>操作提示：</p>
+    <ul>
+      <li>1. 请先开启虚拟人开启摄像头</li>
+      <li>2. 面试结束后请先关闭虚拟人再关闭摄像头</li>
+      <li>2. 关闭后请等待几秒</li>
+      <li>3. 系统将自动跳转至历史记录</li>
+    </ul>
+  </div>
+  <button 
+    @click="cameraOn ? stopCamera() : startCamera()" 
+    :class="['camera-btn', cameraOn ? 'btn-stop' : 'btn-start']"
+  >
+    <i :class="cameraOn ? 'icon-stop' : 'icon-start'"></i>
+    {{ cameraOn ? '关闭摄像头' : '开启摄像头' }}
+  </button>
+</div>
     
 
   </div>
@@ -1483,12 +1493,13 @@ async function fetchUserJobInfo() {
   height: 480px;
   position: relative; /* 为图表定位做准备 */
   flex: 1; /* 占据剩余空间 */
+  
 }
 
 .evaluation-panel {
     position: relative;
   grid-area: evaluation-panel;
-    top: -0px;  /* 向上移动50像素 */
+    top: -100px;  /* 向上移动50像素 */
      display: flex;
   flex-direction: column;
   height: 100%; /* 继承父容器高度 */
@@ -1861,5 +1872,39 @@ async function fetchUserJobInfo() {
 .dark-mode .btn-cancel {
   background-color: #444;
   color: #e0e0e0;
+}
+/* 操作提示样式 */
+.operation-tips {
+  background-color: rgba(24, 144, 255, 0.1);
+  border-left: 3px solid #1890ff;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.dark-mode .operation-tips {
+  background-color: rgba(24, 144, 255, 0.2);
+  border-left-color: #00eaff;
+}
+
+.operation-tips p {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #1890ff;
+}
+
+.dark-mode .operation-tips p {
+  color: #00eaff;
+}
+
+.operation-tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.operation-tips li {
+  margin-bottom: 3px;
 }
 </style>

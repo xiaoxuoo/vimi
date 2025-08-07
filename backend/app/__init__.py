@@ -31,13 +31,11 @@ def create_app(config_name='development'):
     from .routes.tts import tts_bp
     from .routes.asr import asr_bp
     from .routes.job import job_bp, jobApplication_bp
-    from .routes.interview import interview_bp
     from .routes.user import user_bp
     from .routes.voice_record import voice_record_bp
     from .routes.ai_ask import ai_ask_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(resume_bp, url_prefix='/api/resume')
-    app.register_blueprint(interview_bp, url_prefix='/api/interview')
     app.register_blueprint(asr_bp, url_prefix='/api/asr')
     app.register_blueprint(vision_bp, url_prefix='/api/vision')
     app.register_blueprint(tts_bp, url_prefix='/api/tts')
