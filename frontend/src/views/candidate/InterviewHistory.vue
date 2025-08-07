@@ -68,8 +68,9 @@
 
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="viewDetail(row)">详情</el-button>
-            <el-button type="success" link @click="goToReport(row.record_id)">查看分析报告</el-button>
+            <el-button type="primary" link @click="viewDetail(row)">面试详情</el-button>
+            <!-- 新增按钮 -->
+    <el-button type="info" link @click="viewAnswerResult(row)">查看答题结果</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -155,6 +156,85 @@
         <p>加载中...</p>
       </div>
     </el-dialog>
+
+
+<!-- 答题结果弹窗 -->
+<el-dialog
+  title="答题结果分析"
+  v-model="showAnswerDialog"
+  width="1000px"
+  @close="handleAnswerDialogClose"
+  class="answer-analysis-dialog"
+>
+  <div v-if="loading" class="loading-container">
+    <i class="el-icon-loading"></i>
+    <span>加载中...</span>
+  </div>
+  
+  <template v-else>
+
+    <!-- 答题详情表格 -->
+    <el-card shadow="never" class="answer-table-card">
+      <el-table :data="answerResults" style="width: 100%">
+        <el-table-column prop="question_content" label="题目" width="300" />
+        <el-table-column prop="user_answer_text" label="用户答案" width="180" />
+        <el-table-column prop="correct_answer_text" label="正确答案" width="180" />
+        <el-table-column label="得分" width="100">
+          <template #default="{ row }">
+            <span class="score-badge" :class="{'correct': row.is_correct, 'wrong': !row.is_correct}">
+              {{ row.score || 0 }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="是否正确" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.is_correct ? 'success' : 'danger'" size="small">
+              {{ row.is_correct ? '正确' : '错误' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <!-- 详细能力分析 -->
+    <el-card shadow="never" class="analysis-card">
+      <template #header>
+        <div class="analysis-header">
+          <span>详细能力分析</span>
+        </div>
+      </template>
+      
+      <div class="analysis-grid">
+        <div v-for="(item, key) in answerAnalysis" 
+             :key="key" 
+             class="analysis-item" 
+             v-if="!['total_score', 'correct_rate'].includes(key)">
+          <div class="analysis-title">{{ key }}</div>
+          <div class="analysis-progress">
+            <el-progress 
+              :percentage="item.score || 0" 
+              :color="getScoreColor(item.score)"
+              :show-text="false"
+              :stroke-width="12"
+            />
+            <span class="analysis-score">{{ item.score || 0 }}分</span>
+          </div>
+          <div class="analysis-desc">{{ item.description || '暂无评价' }}</div>
+        </div>
+      </div>
+    </el-card>
+  </template>
+
+  <template #footer>
+    <el-button type="primary" @click="showAnswerDialog = false">关闭</el-button>
+  </template>
+</el-dialog>
+
+
+
+
+
+
   </div>
 </template>
 
@@ -218,10 +298,16 @@ export default {
       currentPage: 1,
       pageSize: 10,
       showDetailDialog: false,
+      answerAnalysis: null,
       detailRecord: null,
       expressionChart: null,
       emotionChart: null,
       skillsChart: null,
+      
+
+      // 之前的data字段保持不变
+      showAnswerDialog: false,
+      answerResults: [],
       statusOptions: [
         { label: '待面试', value: 'scheduled' },
         { label: '进行中', value: 'ongoing' },
@@ -294,6 +380,14 @@ export default {
       }
       return map[status] || 'info'
     },
+
+    // 根据分数获取颜色
+getScoreColor(score) {
+  if (score >= 80) return '#48bb78'; // 优秀 - 绿色
+  if (score >= 60) return '#4299e1'; // 良好 - 蓝色
+  if (score >= 40) return '#ed8936'; // 一般 - 橙色
+  return '#f56565'; // 较差 - 红色
+},
     async fetchInterviews() {
       try {
         const userStr = localStorage.getItem('user')
@@ -324,6 +418,43 @@ export default {
         console.error('获取面试数据失败', error)
       }
     },
+
+ async viewAnswerResult(row) {
+      if (!row.question_set_id) {
+        this.$message.warning('该面试记录没有答题结果关联')
+        return
+      }
+      try {
+        const userStr = localStorage.getItem('user')
+        const userId = userStr ? JSON.parse(userStr).id : null
+
+        const res = await axios.get('/api/ask/answer_results', {
+          params: {
+            question_set_id: row.question_set_id,
+            user_id: userId
+          }
+        })
+        if (res.data.code === 0) {
+          console.log('答题结果数据：', res.data.data)  // 👈 重点打印这里
+       this.answerResults = res.data.data.answers || []
+this.answerAnalysis = res.data.data.analysis || null
+
+          this.showAnswerDialog = true
+        } else {
+          this.$message.error('获取答题结果失败：' + (res.data.message || '未知错误'))
+        }
+      } catch (error) {
+        console.error(error)
+        this.$message.error('请求答题结果接口失败')
+      }
+    },
+
+handleAnswerDialogClose() {
+  this.showAnswerDialog = false
+  this.answerResults = []
+  this.answerAnalysis = null
+}
+,
     updateStatistics() {
       this.statistics[0].value = this.interviews.length
       this.statistics[1].value = this.interviews.filter(i => i.status === 'completed').length
@@ -939,6 +1070,197 @@ export default {
   
   .comment-label {
     min-width: 90px;
+  }
+}
+
+/* 答题结果弹窗样式 */
+.answer-analysis-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(90deg, #6b46c1, #4299e1);
+  margin: 0;
+  padding: 15px 20px;
+}
+
+.answer-analysis-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.answer-analysis-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.score-summary {
+  display: flex;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #edf2f7 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.total-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 30px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.score-label {
+  font-size: 16px;
+  color: #4a5568;
+  margin-bottom: 10px;
+}
+
+.score-circle {
+  position: relative;
+}
+
+.score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.score-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.score-max {
+  font-size: 14px;
+  color: #718096;
+}
+
+.score-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 30px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  color: #718096;
+  font-size: 14px;
+}
+
+.detail-value {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.answer-table-card {
+  margin: 0 20px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.analysis-card {
+  margin: 0 20px 20px;
+  border-radius: 0 0 12px 12px;
+}
+
+.analysis-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.analysis-item {
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #6b46c1;
+}
+
+.analysis-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #4a5568;
+}
+
+.analysis-progress {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.analysis-progress :deep(.el-progress) {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.analysis-score {
+  font-weight: 600;
+  color: #2d3748;
+  min-width: 40px;
+  text-align: right;
+}
+
+.analysis-desc {
+  font-size: 13px;
+  color: #718096;
+  line-height: 1.5;
+}
+
+.score-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.score-badge.correct {
+  background-color: #f0fff4;
+  color: #38a169;
+}
+
+.score-badge.wrong {
+  background-color: #fff5f5;
+  color: #e53e3e;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .score-summary {
+    flex-direction: column;
+  }
+  
+  .total-score {
+    padding-right: 0;
+    padding-bottom: 20px;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .score-details {
+    padding-left: 0;
+    padding-top: 20px;
+  }
+  
+  .analysis-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

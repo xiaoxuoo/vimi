@@ -481,6 +481,7 @@ def get_evaluation_by_user_job():
         'application_id': application.id,
         'user_id': application.user_id,
         'job_id': application.job_id,
+        'audio_path': application.audio_path or '',
         'evaluation_result': application.evaluation_result or '',
     })
 

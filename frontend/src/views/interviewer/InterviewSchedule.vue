@@ -146,6 +146,10 @@
                   <span v-else class="no-resume">未上传</span>
                 </td>
                 <td class="application-actions">
+<button @click="fetchUserAnalysis(app.user_id, app.job_title)" class="action-btn analysis-btn">
+  <i class="icon-bar-chart"></i> 查看分析
+</button>
+
                   <div class="action-buttons">
                     <button @click="approve(app.application_id)" class="action-btn approve-btn">
                       <i class="icon-check"></i> 通过
@@ -173,7 +177,7 @@
                       
                       <div v-else class="schedule-form">
                         <div class="form-group">
-                          <label><i class="icon-clock"></i> 面试时间</label>
+                          <label><i class="icon-clock"></i> 报到时间</label>
                           <input 
                             type="datetime-local" 
                             v-model="interviewTimes[app.application_id]"
@@ -181,7 +185,7 @@
                           />
                         </div>
                       <div class="form-group">
-  <label><i class="icon-video"></i> 面试链接</label>
+  <label><i class="icon-video"></i> 输入面试结果</label>
   <input 
     type="text" 
     v-model="interviewLinks[app.application_id]"
@@ -189,7 +193,6 @@
     placeholder="请输入或粘贴面试链接"
   />
 </div>
-
                         <button 
                           @click="setInterview(app.application_id)" 
                           class="save-btn"
@@ -228,11 +231,101 @@
         </div>
       </div>
     </div>
+
+<div v-if="showAnalysisModal" class="resume-modal-overlay" @click.self="showAnalysisModal = false">
+  <div class="resume-modal" style="width: 700px; max-height: 80vh; overflow-y: auto;">
+
+    <div class="modal-header">
+      <h3>用户 {{ currentAnalysisUser }} 的分析结果</h3>
+      <button @click="showAnalysisModal = false" class="modal-close-btn" title="关闭">
+        <i class="icon-close"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- 笔试分析 -->
+      <h4 style="margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 6px;">笔试分析</h4>
+      <div v-if="analysisResults.length === 0" class="no-analysis">暂无笔试分析记录</div>
+      <div v-else>
+        <div v-for="item in analysisResults" :key="item.id" class="analysis-card">
+          <div class="analysis-header">
+            <span class="analysis-direction">方向：{{ item.direction }}</span>
+            <span class="analysis-time">{{ item.created_at }}</span>
+          </div>
+          <div class="analysis-content">
+            <template v-for="(value, key) in item.analysis" :key="key">
+              <div class="analysis-section">
+                <div class="section-title">
+                  {{ key }} <span class="section-score">（评分：{{ value.score }}）</span>
+                </div>
+                <div class="section-description">{{ value.description }}</div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+
+
+<!-- 面试分析 -->
+<h4 style="margin: 20px 0 10px; font-size: 18px; font-weight: bold;">面试分析</h4>
+
+<div v-if="interviewAnalysisResults.length === 0" class="no-analysis" style="text-align: center; color: #888;">
+  暂无面试分析记录
+</div>
+
+<div v-else>
+  <div 
+    v-for="(item, index) in interviewAnalysisResults" 
+    :key="item.record_id" 
+    class="analysis-card"
+    style="background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"
+  >
+    <div class="analysis-header" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+      <span class="analysis-direction" style="font-weight: bold; font-size: 16px;">岗位：{{ item.job_title }}</span>
+      <span class="analysis-time" style="color: #999; font-size: 14px;">创建时间：{{ item.face_created_at }}</span>
+    </div>
+
+    <div class="analysis-content" style="font-size: 14px; line-height: 1.6;">
+      <div><strong>面试时间：</strong> {{ item.voice_created_at || '无' }}</div>
+
+      <!-- 👁 面部表情图表 -->
+      <div style="margin-top: 16px;">
+        <strong>面部表情数据：</strong>
+        <canvas :id="`expressionChart-${index}`" height="200"></canvas>
+      </div>
+
+      <!-- 😊 情绪分析图表 -->
+      <div style="margin-top: 16px;">
+        <strong>情绪分析：</strong>
+        <canvas :id="`emotionChart-${index}`" height="200"></canvas>
+      </div>
+
+    <!-- 技能分析（文字+评分） -->
+<div style="margin-top: 10px;">
+  <strong>技能分析：</strong>
+</div>
+<div v-for="(value, key) in item.skills" :key="key" style="margin-bottom: 10px; padding: 10px; background: #fefefe; border: 1px solid #eee; border-radius: 6px;">
+  <div style="display: flex; justify-content: space-between;">
+    <span><strong>{{ skillNameMap[key] || key }}</strong>：</span>
+    <span style="color: #409EFF;"><strong>{{ value.score }}</strong> 分</span>
+  </div>
+  <div style="margin-top: 4px; color: #666;">{{ value.comment }}</div>
+</div>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+</div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
+import { Chart, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Title } from 'chart.js'
+Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Title)
 
 export default {
   name: 'ModernHrDashboard',
@@ -246,6 +339,16 @@ export default {
       isSubmittingInterview: {},
       searchQuery: '',
       showResumeModal: false,
+      analysisResults: [],
+      showAnalysisModal: false,
+      currentAnalysisUser: null,
+      interviewAnalysisResults: [], // 新增 面试分析
+      skillNameMap: {
+      creativity: '创造力',
+      language_expression: '语言表达',
+      logical_thinking: '逻辑思维',
+      stress_response: '压力应对'
+    },
       currentResume: {
         url: '',
         candidateName: ''
@@ -332,8 +435,7 @@ export default {
     .finally(() => {
       this.loading = false
     })
-}
-,
+},
     approve(applicationId) {
       axios.post('/api/apply/admin/review', {
         application_id: applicationId,
@@ -389,6 +491,178 @@ export default {
         this.isSubmittingInterview[applicationId] = false
       })
     },
+
+fetchUserAnalysis(userId, jobTitle) {
+  const jobLower = jobTitle.toLowerCase()
+
+  // 同时请求两个接口
+  Promise.all([
+    axios.get(`/api/ask/user_analysis/${userId}`),          // 笔试分析接口
+    axios.get('/api/voice_record/expression_records', {     // 面试分析接口
+      params: { user_id: userId }
+    })
+  ]).then(([examRes, interviewRes]) => {
+    // 笔试分析过滤
+    this.analysisResults = examRes.data.filter(item => {
+      const dirLower = (item.direction || '').toLowerCase()
+      return dirLower.includes(jobLower) || jobLower.includes(dirLower)
+    })
+
+    // 面试分析过滤（根据jobTitle匹配）
+    this.interviewAnalysisResults = (interviewRes.data.data || []).filter(item => {
+      const job = (item.job_title || '').toLowerCase()
+      return job.includes(jobLower) || jobLower.includes(job)
+    })
+
+    this.currentAnalysisUser = userId
+    this.showAnalysisModal = true
+    this.$nextTick(() => {
+  this.renderInterviewCharts()
+})
+
+  }).catch(err => {
+    console.error(err)
+    this.showMessage('加载分析失败', 'error')
+  })
+},
+renderInterviewCharts() {
+  this.$nextTick(() => {   const expressionLabels = [
+      '其他(非人脸)', 
+      '其他表情', 
+      '喜悦', 
+      '愤怒', 
+      '悲伤', 
+      '惊恐', 
+      '厌恶', 
+      '中性'
+    ]
+this.interviewAnalysisResults.forEach((item, index) => {
+      // 1. 面部表情图
+      const expressionData = item.expression_data || {}
+      const expressionValues = Object.values(expressionData)
+
+      new Chart(document.getElementById(`expressionChart-${index}`), {
+        type: 'bar',
+        data: {
+          labels: expressionLabels,
+          datasets: [{
+            label: '面部表情得分',
+            data: expressionValues,
+            backgroundColor: [
+        'rgba(138, 43, 226, 0.8)', 
+        'rgba(255, 140, 0, 0.8)',   
+        'rgba(138, 43, 226, 0.8)',
+        'rgba(255, 140, 0, 0.8)',
+        'rgba(138, 43, 226, 0.8)',
+        'rgba(255, 140, 0, 0.8)',
+        'rgba(138, 43, 226, 0.8)',
+        'rgba(255, 140, 0, 0.8)'
+      ],
+      borderColor: 'rgba(255,255,255,0.9)',
+      borderWidth: 1
+          }]
+        },
+    options: {
+    responsive: true,
+    plugins: {
+      title: { 
+        display: true, 
+        text: '面部表情',
+        color: '#fff'
+      },
+      legend: {
+        labels: { color: '#fff' }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      },
+      y: {
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      }
+    }
+  }
+})
+// 2. 情绪分析图
+const emotionData = item.emotion || {}
+new Chart(document.getElementById(`emotionChart-${index}`), {
+  type: 'bar',
+  data: {
+    labels: ['积极', '中性', '消极'],
+    datasets: [{
+      label: '情绪百分比',
+      data: [emotionData.positive || 0, emotionData.neutral || 0, emotionData.negative || 0],
+      backgroundColor: [
+        'rgba(138, 43, 226, 0.8)',  // 紫色
+        'rgba(255, 165, 0, 0.8)',   // 橙色
+        'rgba(220, 20, 60, 0.8)'    // 红色
+      ],
+      borderColor: 'rgba(255,255,255,0.9)',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: '情绪分析', color: '#fff' },
+      legend: { labels: { color: '#fff' } }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      },
+      y: {
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      }
+    }
+  }
+})
+
+// 3. 技能分析图
+const skillsData = item.skills || {}
+const skillLabels = Object.keys(skillsData)
+const skillScores = skillLabels.map(key => skillsData[key].score)
+new Chart(document.getElementById(`skillsChart-${index}`), {
+  type: 'bar',
+  data: {
+    labels: skillLabels,
+    datasets: [{
+      label: '技能评分',
+      data: skillScores,
+      backgroundColor: skillLabels.map((_, i) =>
+        i % 2 === 0 ? 'rgba(138, 43, 226, 0.8)' : 'rgba(255, 140, 0, 0.8)'
+      ),
+      borderColor: 'rgba(255,255,255,0.9)',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: '技能评分', color: '#fff' },
+      legend: { labels: { color: '#fff' } }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      },
+      y: {
+        ticks: { color: '#ccc' },
+        grid: { color: 'rgba(255,255,255,0.1)' }
+      }
+    }
+  }
+})
+    })
+  })
+},
+
     formatDateTime(dateStr) {
       if (!dateStr) return ''
       const date = new Date(dateStr)
@@ -1104,4 +1378,147 @@ export default {
 .icon-link::before { content: "🔗"; }
 .icon-video::before { content: "🎥"; }
 .icon-save::before { content: "💾"; }
+
+.resume-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.resume-modal {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px 24px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+  font-size: 20px;
+  color: #409EFF;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #909399;
+  transition: color 0.2s ease;
+}
+.modal-close-btn:hover {
+  color: #f56c6c;
+}
+
+.modal-body {
+  padding-top: 16px;
+}
+
+.no-analysis {
+  text-align: center;
+  color: #999;
+  font-size: 16px;
+  padding: 60px 0;
+}
+
+.analysis-card {
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 18px;
+  background: #fafafa;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #606266;
+}
+
+.analysis-direction {
+  color: #409EFF;
+}
+
+.analysis-time {
+  color: #909399;
+  font-size: 14px;
+}
+
+.analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.analysis-section {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 5px;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 5px #f0f4f8;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #303133;
+  margin-bottom: 6px;
+}
+
+.section-score {
+  font-weight: 400;
+  font-size: 13px;
+  color: #f56c6c;
+  margin-left: 8px;
+}
+
+.section-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4a4a4a;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.action-btn.analysis-btn {
+  background-color: #409EFF; /* 经典蓝色背景 */
+  color: #fff;               /* 白色文字 */
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* 图标和文字间距 */
+}
+
+.action-btn.analysis-btn:hover {
+  background-color: #66b1ff; /* 悬停时浅蓝 */
+}
+
 </style>

@@ -22,6 +22,8 @@ class UserAnswer(db.Model):
     correct_answer_text = db.Column(db.Text, nullable=True)  # 正确选项对应的文本内容
     question_content = db.Column(db.Text)  # 新增字段，存题干
     # 关联题目（可选）
+    question_set_id = db.Column(db.String(36), nullable=False, default='')
+
     question = db.relationship("AIAsk", backref="user_answers")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # ✅ 添加这一行
     def to_dict(self):
@@ -41,5 +43,6 @@ class UserAnswer(db.Model):
             "user_answer_text": self.user_answer_text , # ✅ 同样加这个
             "analysis_id": self.analysis_id,
             "question_content":self.question_content,
+            "question_set_id": self.question_set_id  # ✅ 新增返回
 
         }

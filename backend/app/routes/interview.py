@@ -4,9 +4,8 @@ from ..services.interview.interview_service import interview_service
 from ..utils.validators import validate_date_format
 
 # 创建蓝图
-interview_bp = Blueprint('interview', __name__)
-
-@interview_bp.route('/upcoming', methods=['GET'])
+interview_bp = (Blueprint('interview', __name__)
+@interview_bp.route('/upcoming', methods=['GET']))
 def get_upcoming_interview():
     """获取即将开始的面试"""
     user_id = request.args.get('user_id')  # 实际应该从认证中获取

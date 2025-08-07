@@ -1,7 +1,6 @@
 <template>
   <div class="job-list-container">
     <h1 class="page-title">岗位管理</h1>
-
     <!-- 搜索与筛选区域 -->
     <div class="filters-container">
       <div class="search-box">
@@ -129,17 +128,11 @@
             </div>
 
             <div v-if="job.application_status === '已通过'" class="interview-info">
-              <button @click="showInterviewInfo(job)" class="view-interview-btn">查看面试信息</button>
+              <button @click="showInterviewInfo(job)" class="view-interview-btn">查看面试结果</button>
             </div>
 
             <div class="resume-link">
-              <button 
-                @click="triggerPhotoUpload(job.id)" 
-                :disabled="uploadingPhoto && uploadingPhotoJobId === job.id"
-                class="upload-btn"
-              >
-                {{ uploadingPhoto && uploadingPhotoJobId === job.id ? '上传中...' : '上传证件照' }}
-              </button>
+            
               <input
                 type="file"
                 :ref="'photoInput' + job.id"
@@ -179,24 +172,12 @@
           </div>
           <div class="custom-modal-step">
             <span class="custom-step-icon">⏰</span>
-            <span><strong>时间：</strong>{{ currentInterviewJob.interview_time || '待定' }}</span>
+            <span><strong>报到时间：</strong>{{ currentInterviewJob.interview_time || '待定' }}</span>
           </div>
           <div class="custom-modal-step">
             <span class="custom-step-icon">🔗</span>
-            <span><strong>会议链接：</strong>{{ currentInterviewJob.interview_link || '无链接' }}</span>
+            <span><strong>面试结果:</strong>{{ currentInterviewJob.interview_link || '无链接' }}</span>
           </div>
-        </div>
-
-        <div class="custom-modal-footer">
-          <button
-            v-if="currentInterviewJob.interview_link"
-            @click="openFacePreview"
-            class="custom-modal-primary-btn"
-          >
-            身份验证并进入会议
-            <span class="custom-btn-arrow">→</span>
-          </button>
-          <button class="custom-modal-secondary-btn" @click="closeInterviewModal">关闭</button>
         </div>
       </div>
     </div>
@@ -688,7 +669,7 @@ export default {
           if (res.passed) {
             // 验证通过后自动跳转到笔试页面
             setTimeout(() => {
-              this.$router.push('/candidate/interviewWriten')
+              this.$router.push('/candidate/interviewauto')
             }, 3000)
           }
           
@@ -716,7 +697,7 @@ goToMeeting() {
   this.$router.push({ name: 'InterviewTest' }).catch((err) => {
     console.error('跳转失败:', err)
     // 备用方案，强制跳转
-    window.location.href = '/candidate/InterviewWriten'
+    window.location.href = '/candidate/Interviewauto'
   })
 }
 
@@ -951,7 +932,7 @@ h2 {
 }
 
 .apply-btn {
-  background: #1890ff;
+  background:blueviolet;
   color: white;
   border: none;
   padding: 8px 16px;

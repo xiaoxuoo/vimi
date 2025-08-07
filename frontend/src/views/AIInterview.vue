@@ -159,6 +159,9 @@ const showModal = ref(false)
 const countdown = ref(10)
 let countdownTimer = null
 
+//uuid
+const questionSetId = localStorage.getItem('question_set_id') || ''
+console.log('当前 question_set_id:', questionSetId)
 
 
 /* ===== 常量 ===== */
@@ -278,7 +281,8 @@ async function saveSummaryToBackend() {
       record_id: recordId,
       summary: true,
       summary_data: expressionSummary.value,
-      job_title: jobTitle.value
+      job_title: jobTitle.value,
+      question_set_id: questionSetId 
     })
     console.log('保存统计接口返回:', res.data)
     if (res.data.code === 0) {
@@ -652,8 +656,8 @@ async function uploadAudio(base64Audio) {
       return
     }
 
-    // === 获取当前申请的 job_id（示例从当前选中职位对象中取）===
-    const jobId = currentInterviewJob?.id || null // 你之前代码中就有 currentInterviewJob 变量
+    // 这里直接用 this.currentInterviewJob.id
+const jobId = currentInterviewJob.value?.id || localStorage.getItem('current_job_id')
 
     if (!jobId) {
       console.warn('未获取到申请的 job_id')

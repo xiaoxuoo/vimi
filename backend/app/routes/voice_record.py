@@ -125,8 +125,8 @@ def get_latest_sentiment():
         'record_id': latest_record.id,
         'created_at': latest_record.created_at.isoformat()
     }), 200
-def save_expression_summary(user_id, record_id, summary_data,job_title):
-    print(f'保存统计数据：user_id={user_id}, record_id={record_id}, summary_data={summary_data},job_title={job_title}')
+def save_expression_summary(user_id, record_id, summary_data,job_title, question_set_id=None):
+    print(f'保存统计数据：user_id={user_id}, record_id={record_id}, summary_data={summary_data},job_title={job_title}, question_set_id={question_set_id}')
     if not user_id or not record_id or not summary_data:
         return jsonify({"code": -1, "desc": "缺少必要参数"}), 400
     try:
@@ -136,6 +136,7 @@ def save_expression_summary(user_id, record_id, summary_data,job_title):
             record_id=record_id,
             job_title=job_title,
             expression_data=expression_json,
+            question_set_id=question_set_id,  # 新增字段,
             created_at=datetime.utcnow(),
             is_summary=True
         )
@@ -158,8 +159,10 @@ def analyze_face_expression():
     summary = data.get('summary')  # 是否为统计数据提交
     summary_data = data.get('summary_data')  # 表情统计字典
     job_title = data.get('job_title')  # 新增岗位字段
+    question_set_id = data.get('question_set_id')  # 新增问题集ID字段
+
     if summary:
-        return save_expression_summary(user_id, record_id, summary_data,job_title)
+        return save_expression_summary(user_id, record_id, summary_data,job_title, question_set_id)
 
     # 正常每帧分析逻辑
     if not img_base64:
@@ -233,6 +236,7 @@ def get_expression_records():
             "emotion": emotion,
             "job_title": fer.job_title,
             "skills": skills,
+            "question_set_id": fer.question_set_id
         })
 
     return jsonify({

@@ -32,13 +32,14 @@ def get_questions():
 
     return jsonify(result)
 
-
+import uuid
 # 提交答卷接口
 @ai_ask_bp.route('/submit_answers', methods=['POST'])
 def submit_answers():
     data = request.json
     answers = data.get('answers', [])
     user_id = data.get('user_id')
+    question_set_id = str(uuid.uuid4())  # 生成唯一题组ID
     if not answers or not user_id:
         return jsonify({"error": "用户ID或答案不能为空"}), 400
 
@@ -93,6 +94,7 @@ def submit_answers():
             reference_answer=question.reference_answer,
             question_type=question.type,
             direction=question.direction,
+            question_set_id=question_set_id,  # ✅ 保存题组ID
             created_at=datetime.utcnow()
         )
         db.session.add(ua)
@@ -115,7 +117,8 @@ def submit_answers():
         "results": results,
         "score": score,
         "total": total,
-        "correct_count": correct_count
+        "correct_count": correct_count,
+        "question_set_id": question_set_id
     })
 
 
@@ -272,3 +275,71 @@ def list_avatars():
         'update_time': a.update_time.strftime('%Y-%m-%d %H:%M:%S') if a.update_time else None,
     } for a in avatars]
     return jsonify({'success': True, 'data': result})
+
+
+###根据面试的 question_set_id 查询答题结果列表
+@ai_ask_bp.route('/answer_results', methods=['GET'])
+def get_answer_results():
+    question_set_id = request.args.get('question_set_id')
+    user_id = request.args.get('user_id')
+
+    if not question_set_id:
+        return jsonify({"code": 1, "message": "缺少 question_set_id 参数"}), 400
+    if not user_id:
+        return jsonify({"code": 1, "message": "缺少 user_id 参数"}), 400
+
+    # 查询答题记录
+    answers = UserAnswer.query.filter_by(question_set_id=question_set_id, user_id=user_id) \
+                              .order_by(UserAnswer.id.asc()).all()
+    answer_list = [a.to_dict() for a in answers]
+
+    # 尝试获取 analysis_id（任意一条记录中有即可）
+    analysis_id = None
+    for a in answers:
+        if a.analysis_id:
+            analysis_id = a.analysis_id
+            break
+
+    analysis_data = None
+    if analysis_id:
+        analysis_record = UserAnswerAnalysis.query.filter_by(id=analysis_id, user_id=user_id).first()
+        if analysis_record:
+            analysis_data = json.loads(analysis_record.analysis_json)
+
+    return jsonify({
+        "code": 0,
+        "data": {
+            "answers": answer_list,
+            "analysis": analysis_data
+        }
+    })
+
+
+@ai_ask_bp.route('/user_analysis_by_application', methods=['GET'])
+def get_user_analysis_by_application():
+    user_id = request.args.get('user_id', type=int)
+    job_app_id = request.args.get('job_application_id', type=int)
+    print(f'user_id: {user_id}, job_application_id: {job_app_id}')
+
+    if not user_id or not job_app_id:
+        return jsonify({"code": -1, "msg": "缺少 user_id 或 job_application_id 参数"}), 400
+
+    records = UserAnswerAnalysis.query.filter_by(
+        user_id=user_id,
+        job_application_id=job_app_id
+    ).order_by(UserAnswerAnalysis.created_at.desc()).all()
+
+    result = []
+    for r in records:
+        result.append({
+            "id": r.id,
+            "direction": r.direction,
+            "created_at": r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "analysis": json.loads(r.analysis_json) if r.analysis_json else {}
+        })
+
+    return jsonify({
+        "code": 0,
+        "msg": "查询成功",
+        "data": result
+    })

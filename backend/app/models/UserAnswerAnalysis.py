@@ -11,3 +11,10 @@ class UserAnswerAnalysis(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # 可选：反向关联答题记录
     answers = db.relationship('UserAnswer', backref='analysis', lazy=True)
+    # 新增字段，关联岗位申请
+
+
+    job_application_id = db.Column(db.Integer, db.ForeignKey('job_applications.id'), nullable=True)
+
+# 关系映射，方便通过UserAnswerAnalysis获取对应岗位申请
+    job_application = db.relationship('JobApplication', backref=db.backref('answer_analyses', lazy=True))

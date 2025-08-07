@@ -2,7 +2,7 @@
   <div class="approved-candidates-page">
     <!-- 头部 -->
     <div class="header">
-      <h1>已安排面试的候选人</h1>
+      <h1>已安排报到面试者</h1>
       <div class="stats-export">
         <div class="stat-card">
           <span class="stat-value">{{ filteredCandidates.length }}</span>
@@ -35,13 +35,13 @@
           <div ref="jobChart" class="chart-container"></div>
         </section>
         <section class="chart-panel">
-          <h2>面试时间分布（小时）</h2>
+          <h2>报到时间分布（小时）</h2>
           <div ref="timeChart" class="chart-container"></div>
         </section>
       </div>
 
       <section class="upcoming-panel">
-        <h2>即将面试（3小时内）</h2>
+        <h2>即将报到（3小时内）</h2>
         <ul class="upcoming-list">
           <li v-for="c in upcomingCandidates" :key="c.id" class="upcoming-item">
             <div class="upcoming-name">{{ c.name }}</div>
@@ -67,14 +67,14 @@
           <span class="candidate-id">申请ID: {{ c.id }}</span>
         </div>
         <div class="interview-info">
-          <span class="time">面试时间: {{ formatDateTime(c.interviewTime) }}</span>
+          <span class="time">报到时间: {{ formatDateTime(c.interviewTime) }}</span>
           <span
             class="countdown"
             :class="{ expired: getRemainingTime(c.interviewTime).expired }"
           >
             {{ getRemainingTime(c.interviewTime).text }}
           </span>
-          <a :href="c.interviewLink" class="link" target="_blank">进入面试</a>
+    
         </div>
       </li>
     </ul>

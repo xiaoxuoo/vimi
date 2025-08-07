@@ -63,6 +63,12 @@ const router = createRouter({
                     component: () => import('@/views/candidate/InterviewWriten.vue'),
                     meta: { keepAlive: true }
                 },
+                   {
+                    path: 'interviewauto',
+                    name: 'Interviewauto',
+                    component: () => import('@/views/candidate/Interviewauto.vue'),
+                    meta: { keepAlive: true }
+                },
                 {
                     path: 'schedule',
                     name: 'InterviewSchedule',
